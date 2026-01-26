@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { KEY, Loader } from "./App";
 import StarRating from "./StarRating";
+import { useKey } from "./useKey";
 
 export function MovieDetails({
     selectedId,
@@ -11,6 +12,15 @@ export function MovieDetails({
     const [movie, setMovie] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [userRating, setUserRating] = useState("");
+
+    const countRef = useRef(0);
+
+    useEffect(
+        function () {
+            if (userRating) countRef.current++;
+        },
+        [userRating]
+    );
 
     const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
     const watchedUserRating = watched.find(
@@ -30,6 +40,10 @@ export function MovieDetails({
         Genre: genre,
     } = movie;
 
+    const isTop = imdbRating > 8;
+
+    const [avgRating, setAvgRating] = useState(0);
+
     function handleAdd() {
         const newWatchedMovie = {
             imdbID: selectedId,
@@ -39,26 +53,15 @@ export function MovieDetails({
             imdbRating: Number(imdbRating),
             runtime: Number(runtime.split(" ").at(0)),
             userRating,
+            countRatingDecisions: countRef.current,
         };
         onAddWatched(newWatchedMovie);
         onCloseMovie();
+        // setAvgRating(Number(imdbRating));
+        // setAvgRating((avgRating) => (avgRating + userRating) / 2);
     }
 
-    useEffect(
-        function () {
-            function callback(e) {
-                if (e.code === "Escape") {
-                    onCloseMovie();
-                }
-            }
-            document.addEventListener("keydown", callback);
-
-            return function () {
-                document.removeEventListener("keydown", callback);
-            };
-        },
-        [onCloseMovie]
-    );
+    useKey("Escape", onCloseMovie);
 
     useEffect(
         function () {
@@ -113,6 +116,7 @@ export function MovieDetails({
                             </p>
                         </div>
                     </header>
+                    {/* <p>{avgRating}</p> */}
                     <section>
                         <div className="rating">
                             {isWatched ? (
@@ -128,7 +132,7 @@ export function MovieDetails({
                                     onSetRating={setUserRating}
                                 ></StarRating>
                             )}
-                            {userRating > 0 && (
+                            {!isWatched && userRating > 0 && (
                                 <button className="btn-add" onClick={handleAdd}>
                                     + Add to list
                                 </button>
